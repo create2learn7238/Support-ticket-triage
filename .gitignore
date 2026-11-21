@@ -17,6 +17,7 @@ qa_tmp/
 
 # Cache and testing
 .pytest_cache/
+.pytest_tmp/
 
 # IDE
 .vscode/
