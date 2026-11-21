@@ -74,26 +74,26 @@ The batch run on all 300 tickets with `--seed 42` produced the following metrics
 | Metric | Value |
 |---|---|
 | Total tickets | 300 |
-| Auto-handled | 138 (46.0%) |
-| Human review | 162 (54.0%) |
-| Average latency | 1127.4 ms |
-| P95 latency | 2015 ms |
-| Total retries | 12 |
+| Auto-handled | 141 (47.0%) |
+| Human review | 159 (53.0%) |
+| Average latency | 1025.1 ms |
+| P95 latency | 2014 ms |
+| Total retries | 13 |
 | Total run time | 4.06 s |
 
 ### Breakdown by Review Reason
 | Reason | Count |
 |---|---|
-| `LOW_CONFIDENCE` | 111 |
-| `URGENT_LOW_CONFIDENCE` | 26 |
-| `INVALID_OUTPUT` | 12 |
+| `LOW_CONFIDENCE` | 107 |
+| `URGENT_LOW_CONFIDENCE` | 25 |
+| `INVALID_OUTPUT` | 14 |
 | `RULE_CONFLICT` | 8 |
 | `EMPTY_OR_SHORT` | 4 |
 | `PROMPT_INJECTION` | 1 |
 
 ### Auto-Handled by Category and Priority
-- **Categories**: billing: 35, technical_issue: 24, shipping_delivery: 23, feedback: 20, account_access: 18, sales_partnership: 6, legal_privacy: 6, product_question: 6.
-- **Priorities**: low: 87, medium: 44, urgent: 4, high: 3.
+- **Categories**: billing: 34, technical_issue: 28, shipping_delivery: 25, account_access: 18, feedback: 18, sales_partnership: 6, legal_privacy: 6, product_question: 6.
+- **Priorities**: low: 84, medium: 49, urgent: 5, high: 3.
 
 These results use the mock model. I have not hand-labeled tickets, so I can report how many tickets were auto-handled but not how many of those are correct. Measuring accuracy is the first thing I would add next.
 

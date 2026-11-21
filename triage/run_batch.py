@@ -12,13 +12,11 @@ from src.store import save_decisions, save_review_csv
 from src.report import print_report
 
 
-async def main_async(seed: int | None = None) -> None:
+async def main_async(seed: int | None = 42) -> None:
     config = load_config("config.yaml")
     tickets = load_tickets(config)
 
-    model = get_model(config)
-    if isinstance(model, MockModel) and seed is not None:
-        model.rng.seed(seed)
+    model = get_model(config, seed=seed)
 
     start = time.perf_counter()
     decisions = await run_all(tickets, model, config)

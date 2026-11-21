@@ -104,10 +104,10 @@ class RealModel:
         raise NotImplementedError(f"Provider {provider} requires official credentials and API client.")
 
 
-def get_model(config: dict[str, Any]) -> ModelProtocol:
+def get_model(config: dict[str, Any], seed: int | None = 42) -> ModelProtocol:
     provider = config.get("model", {}).get("provider", "mock")
     if provider == "mock":
-        return MockModel(config)
+        return MockModel(config, seed=seed)
     return RealModel(config)
 
 
