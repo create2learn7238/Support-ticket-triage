@@ -1,6 +1,6 @@
-import asyncio, json, sys, tempfile
+import asyncio, json, sys
 from pathlib import Path
-import copy, yaml
+import copy
 
 triage = Path(r'd:\Dixit\Tech ahir\Support Ticket Triage\triage')
 sys.path.insert(0, str(triage))
@@ -77,6 +77,7 @@ async def run_checks():
     cfg_err = copy.deepcopy(cfg)
     cfg_err['mock']['timeout_rate'] = 1.0
     cfg_err['mock']['invalid_json_rate'] = 1.0
+    cfg_err['mock']['slow_response_rate'] = 0.0  # speed up
     tickets = load_tickets(cfg_err)
     m_err = MockModel(cfg_err, seed=42)
     decisions_65 = await run_all(tickets, m_err, cfg_err)
@@ -86,11 +87,13 @@ async def run_checks():
     # 6.6 Concurrency 1 and 20
     cfg_c1 = copy.deepcopy(cfg)
     cfg_c1['model']['max_concurrency'] = 1
+    cfg_c1['mock']['slow_response_rate'] = 0.0  # avoid 2s sleep per item for concurrency test
     m1 = MockModel(cfg_c1, seed=42)
     dec1 = await run_all(tickets, m1, cfg_c1)
 
     cfg_c20 = copy.deepcopy(cfg)
     cfg_c20['model']['max_concurrency'] = 20
+    cfg_c20['mock']['slow_response_rate'] = 0.0
     m20 = MockModel(cfg_c20, seed=42)
     dec20 = await run_all(tickets, m20, cfg_c20)
     results['6.6'] = (len(dec1) == 300 and len(dec20) == 300, len(dec1), len(dec20))
@@ -108,8 +111,11 @@ T-0006,2026-11-16 07:05,User6,"Embedded, commas, quotes and\nnewlines","Line 1, 
     temp_csv.write_text(csv_content, encoding='utf-8')
     cfg_edge = copy.deepcopy(cfg)
     cfg_edge['data']['path'] = str(temp_csv)
-    edge_tickets = load_tickets(cfg_edge)
-    results['6.7'] = (len(edge_tickets) == 6, len(edge_tickets), [t.id for t in edge_tickets])
+    try:
+        edge_tickets = load_tickets(cfg_edge)
+        results['6.7'] = (len(edge_tickets) == 6, len(edge_tickets), [t.id for t in edge_tickets])
+    except Exception as e:
+        results['6.7'] = (False, f'CRASH: {type(e).__name__}: {str(e)}')
 
     # 6.8 Missing body column
     bad_csv = Path(r'd:\Dixit\Tech ahir\Support Ticket Triage\qa_tmp\missing_col.csv')
