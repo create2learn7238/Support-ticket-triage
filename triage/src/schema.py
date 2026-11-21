@@ -46,6 +46,16 @@ class Ticket(BaseModel):
     was_truncated: bool = False
     meta: dict[str, Any] = Field(default_factory=dict)
 
+    @model_validator(mode="before")
+    @classmethod
+    def populate_text(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            if not data.get("text"):
+                subj = data.get("subject", "")
+                body = data.get("body", "")
+                data["text"] = f"{subj}\n\n{body}".strip()
+        return data
+
 
 class ModelOutput(BaseModel):
     """Structured LLM output."""

@@ -62,3 +62,21 @@ def save_review_csv(
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(review_rows)
+
+
+save_human_review_csv = save_review_csv
+
+
+def load_decisions(path: str | Path = "outputs/decisions.jsonl") -> list[Decision]:
+    p = Path(path)
+    if not p.exists():
+        return []
+    import json
+    decisions = []
+    with open(p, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                decisions.append(Decision.model_validate(json.loads(line)))
+    return decisions
+

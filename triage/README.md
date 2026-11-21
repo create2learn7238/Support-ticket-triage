@@ -3,26 +3,40 @@
 ## 1. What this is
 This project is an automated support ticket triage service that assigns each incoming ticket a category and a priority, and routes any uncertain or risky tickets to a human review queue. It processes 300 realistic customer support tickets loaded from `data/tickets.csv`.
 
-## 2. Quick start
-Python 3.11 to 3.13 is recommended. Follow these commands from the `triage/` folder:
+## 2. Quick start & Web Dashboard
+Python 3.11 to 3.15 is supported. Follow these commands from the `triage/` folder:
 
 ```bash
 # 1. Create and activate the virtual environment
 python -m venv .venv
-.venv\Scripts\activate
+.\.venv\Scripts\Activate.ps1    # On Windows PowerShell (or: source .venv/bin/activate on Linux/macOS)
 
-# 2. Install core dependencies
-pip install -r requirements.txt
+# 2. Install dependencies (includes FastAPI & dashboard)
+pip install -r requirements-api.txt
 
-# (Optional) To install API service dependencies:
-# pip install -r requirements-api.txt
+# 3. Launch the Web Dashboard (opens http://127.0.0.1:8000 automatically)
+python run_app.py
 
-# 3. Run the test suite
-pytest -v
+# Optional: Run the batch triage from the terminal only
+# python run_batch.py --seed 42
 
-# 4. Run the end-to-end batch triage
-python run_batch.py --seed 42
+# Optional: Run all automated tests
+# pytest -v
 ```
+
+### Run the Dashboard
+1. Install dependencies: `pip install -r requirements-api.txt`
+2. Start the application: `python run_app.py` (your browser opens automatically at `http://127.0.0.1:8000`).
+3. Click **"Run triage on all 300 tickets"** in the top-right header to watch live progress.
+
+#### Dashboard Sections:
+- **Header & Model Status**: Displays current model mode (mock model vs real model) and the batch execution button with a real-time progress bar.
+- **Summary Cards**: Displays key metrics including Total Tickets, Auto-Handled (count and %), Sent to Human (count and %), Average & P95 Latency, and Run Time.
+- **Visual Bar Charts**: Pure CSS/HTML bar charts illustrating tickets by category and flagged human review reasons without external libraries.
+- **Try a Ticket Sandbox**: Interactive sandbox with one-click test samples (Card fraud, Whole office offline, Prompt Injection) to test real-time classification and safety rules.
+- **All Results Table (300)**: Filterable, searchable table with colored priority and status badges; click any row to expand full body previews and reasoning notes.
+- **Human Review Queue**: Dedicated tab sorted by urgency (urgent and high first) with category/priority dropdowns and a "Save label" button that records agent reviews to `outputs/human_labels.jsonl`.
+- **Raw File Downloads**: Direct links to download `outputs/human_review.csv` and `outputs/decisions.jsonl`.
 
 Outputs are written to:
 - `outputs/decisions.jsonl`: One JSON object per ticket recording its final status, category, priority, confidence, latency, and review reason.

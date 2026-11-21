@@ -14,6 +14,7 @@ async def run_all(
     model: Any,
     config: dict[str, Any],
     decisions_path: str | Path = "outputs/decisions.jsonl",
+    on_progress: Any = None,
 ) -> list[Decision]:
     """Run triage on all tickets concurrently, streaming results to disk as they finish."""
     max_concurrency = int(config.get("model", {}).get("max_concurrency", 10))
@@ -62,6 +63,11 @@ async def run_all(
                     )
                 await _append_decision(res)
                 progress.advance(task)
+                if on_progress:
+                    try:
+                        on_progress()
+                    except Exception:
+                        pass
                 return res
 
         # Run with return_exceptions=True
