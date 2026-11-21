@@ -1,7 +1,6 @@
 # src/store.py - Persist decisions to JSONL and review CSV.
 
 import csv
-import json
 from pathlib import Path
 from src.schema import Decision, Ticket
 

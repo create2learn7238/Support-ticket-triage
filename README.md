@@ -4,15 +4,18 @@
 This project is an automated support ticket triage service that assigns each incoming ticket a category and a priority, and routes any uncertain or risky tickets to a human review queue. It processes 300 realistic customer support tickets loaded from `data/tickets.csv`.
 
 ## 2. Quick start
-Follow these commands from the `triage/` folder:
+Python 3.11 to 3.13 is recommended. Follow these commands from the `triage/` folder:
 
 ```bash
 # 1. Create and activate the virtual environment
 python -m venv .venv
 .venv\Scripts\activate
 
-# 2. Install dependencies
+# 2. Install core dependencies
 pip install -r requirements.txt
+
+# (Optional) To install API service dependencies:
+# pip install -r requirements-api.txt
 
 # 3. Run the test suite
 pytest -v
@@ -27,9 +30,10 @@ Outputs are written to:
 - `outputs/report.md`: Markdown summary table of processing metrics and classification breakdowns.
 
 To switch from the default mock model to a real LLM provider, edit `config.yaml`:
-- Set `model.provider` to `anthropic`, `openai`, or `gemini`.
-- Set `model.name` to the specific model identifier (for example `claude-3-5-sonnet-20241022` or `gpt-4o-mini`).
+- Set `model.provider` to `anthropic` (or `openai`/`gemini`).
+- Set `model.name` to the specific model identifier (for example `claude-3-5-sonnet-20241022`).
 - Set `model.api_key_env` to the environment variable containing your API key (for example `ANTHROPIC_API_KEY`).
+*Note: Real model wiring for Anthropic is written but untested without live credentials; OpenAI and Gemini providers are stubs.*
 
 ## 3. How it works
 The triage pipeline processes each ticket through this sequence:
@@ -65,7 +69,7 @@ Each ticket is evaluated against 7 rules in strict order. The first rule that ma
 - **Stricter threshold for high and urgent**: Misclassifying an urgent issue (such as credit card fraud or whole-office downtime) carries severe business impact. High/urgent requires 0.85 confidence versus 0.70 for normal tickets.
 - **Keywords serve only as a safety net**: Urgent keywords can trigger human review if the model disagrees, but keywords alone never assign a priority.
 - **Ticket text treated as untrusted data**: Customer text is treated as data rather than instructions to prevent prompt injection and model jailbreaks.
-- **Repeatable mock model**: The mock model simulates latency, timeouts, and low confidence using configurable rates and seeds so failure paths are verifiable without an API key.
+- **Repeatable mock model**: The mock model simulates latency, timeouts, and low confidence using per-ticket deterministic RNG so failure paths and batch runs are 100% reproducible with `--seed 42`.
 - **Single source of configuration**: All thresholds, keywords, model parameters, and category definitions reside in `config.yaml`.
 
 ## 6. Results on the 300 tickets
@@ -74,26 +78,26 @@ The batch run on all 300 tickets with `--seed 42` produced the following metrics
 | Metric | Value |
 |---|---|
 | Total tickets | 300 |
-| Auto-handled | 141 (47.0%) |
-| Human review | 159 (53.0%) |
-| Average latency | 1025.1 ms |
+| Auto-handled | 136 (45.3%) |
+| Human review | 164 (54.7%) |
+| Average latency | 1214.7 ms |
 | P95 latency | 2014 ms |
-| Total retries | 13 |
-| Total run time | 4.06 s |
+| Total retries | 6 |
+| Total run time | 4.61 s |
 
 ### Breakdown by Review Reason
 | Reason | Count |
 |---|---|
-| `LOW_CONFIDENCE` | 107 |
-| `URGENT_LOW_CONFIDENCE` | 25 |
-| `INVALID_OUTPUT` | 14 |
+| `LOW_CONFIDENCE` | 118 |
+| `URGENT_LOW_CONFIDENCE` | 27 |
 | `RULE_CONFLICT` | 8 |
+| `INVALID_OUTPUT` | 6 |
 | `EMPTY_OR_SHORT` | 4 |
 | `PROMPT_INJECTION` | 1 |
 
 ### Auto-Handled by Category and Priority
-- **Categories**: billing: 34, technical_issue: 28, shipping_delivery: 25, account_access: 18, feedback: 18, sales_partnership: 6, legal_privacy: 6, product_question: 6.
-- **Priorities**: low: 84, medium: 49, urgent: 5, high: 3.
+- **Categories**: billing: 37, technical_issue: 27, shipping_delivery: 24, feedback: 19, account_access: 14, product_question: 6, legal_privacy: 5, sales_partnership: 4.
+- **Priorities**: low: 82, medium: 46, high: 4, urgent: 4.
 
 These results use the mock model. I have not hand-labeled tickets, so I can report how many tickets were auto-handled but not how many of those are correct. Measuring accuracy is the first thing I would add next.
 
@@ -108,13 +112,14 @@ These results use the mock model. I have not hand-labeled tickets, so I can repo
 ## 8. Limitations and what I would build next
 - **No ground-truth accuracy measurement**: Because dataset rows lack verified true labels, accuracy and recall cannot yet be computed formally.
 - **Uncalibrated confidence scores**: Raw confidence outputs from language models are often overconfident or poorly calibrated, requiring empirical validation against labeled data.
+- **Mock model review rate caveat**: The mock model has simple keyword logic, so its review rate is not a prediction for a real model.
 - **Pattern-based injection checking**: The current regex precheck catches known attack signatures, but novel adversarial phrasing requires model-level guardrails and sandboxing.
-- **Service endpoints not yet built**: The FastAPI service with `/triage` and `/review-queue` endpoints is not built yet.
+- **Service endpoints optional**: The FastAPI service in `src/api.py` requires installing `requirements-api.txt`.
 - **No automated monitoring script**: Operational drift detection is currently calculated via batch reports rather than a continuous metric monitor.
 
 ### Next Steps in Order
 1. Hand-label 40 representative tickets and measure baseline accuracy and urgent recall.
 2. Tune confidence thresholds and category keywords based on labeled evaluation data.
-3. Build the FastAPI service exposing `/triage` and `/review-queue` endpoints for live ingestion.
+3. Deploy the FastAPI service exposing `/triage` and `/review-queue` endpoints for live ingestion.
 4. Implement a continuous monitoring script to detect drift in auto-handle percentages and confidence distributions.
 5. Add a circuit breaker pattern and secondary fallback model to make provider outages seamless.

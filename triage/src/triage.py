@@ -44,7 +44,9 @@ async def triage_one(ticket: Ticket, model: Any, config: dict[str, Any]) -> Deci
         start_time = time.perf_counter()
         attempts = 0
         try:
-            raw_json, attempts = await call_with_retry(model, ticket.text, config)
+            raw_json, attempts = await call_with_retry(
+                model, ticket.text, config, ticket_id=ticket.id
+            )
             latency_ms = int((time.perf_counter() - start_time) * 1000)
         except Exception as e:
             latency_ms = int((time.perf_counter() - start_time) * 1000)

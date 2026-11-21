@@ -3,6 +3,7 @@
 from pathlib import Path
 from typing import Any
 import csv
+import sys
 
 from src.schema import Ticket
 
@@ -29,7 +30,6 @@ def load_tickets(config: dict[str, Any]) -> list[Ticket]:
     cust_col = data_cfg.get("customer_column", "customer")
     required_cols = [id_col, subject_col, body_col, recv_col, cust_col]
 
-    # Try pandas first as requested, with standard library fallback
     rows: list[dict[str, str]] = []
     columns_found: list[str] = []
     try:
@@ -39,6 +39,12 @@ def load_tickets(config: dict[str, Any]) -> list[Ticket]:
         for _, r in df.iterrows():
             rows.append({col: str(r[col]) for col in df.columns})
     except ImportError:
+        # Increase field limit for huge bodies in fallback mode
+        try:
+            csv.field_size_limit(sys.maxsize)
+        except OverflowError:
+            csv.field_size_limit(2147483647)
+
         with open(path, "r", encoding="utf-8", errors="replace") as f:
             reader = csv.DictReader(f)
             columns_found = reader.fieldnames or []

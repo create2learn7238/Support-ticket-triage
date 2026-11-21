@@ -14,12 +14,18 @@ build/
 venv/
 env/
 
-# Outputs – never commit generated results
+# Outputs
 outputs/
+qa_tmp/
 
 # Secrets and local overrides
 .env
 *.env
+
+# Cache and testing
+.pytest_cache/
+.coverage
+htmlcov/
 
 # IDE
 .vscode/
