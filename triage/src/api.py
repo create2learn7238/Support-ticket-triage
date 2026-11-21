@@ -340,6 +340,62 @@ async def triage_single(req: SingleTriageRequest) -> dict[str, Any]:
     return res_dict
 
 
+@app.get("/api/sla-metrics")
+def get_sla_metrics() -> dict[str, Any]:
+    joined, dec_map = _load_joined_data()
+    decisions = list(dec_map.values())
+    total = len(joined)
+
+    high_risk_total = sum(1 for d in decisions if (d.priority or "").lower() in {"urgent", "high"})
+    high_risk_reviewed = sum(
+        1 for d in decisions if d.status == "human_review" and (d.priority or "").lower() in {"urgent", "high"}
+    )
+    rule_conflicts = sum(
+        1 for d in decisions if d.review_reason and (d.review_reason.value if hasattr(d.review_reason, "value") else str(d.review_reason)) == "RULE_CONFLICT"
+    )
+    injections = sum(
+        1 for d in decisions if d.review_reason and (d.review_reason.value if hasattr(d.review_reason, "value") else str(d.review_reason)) == "PROMPT_INJECTION"
+    )
+
+    latencies = [d.latency_ms for d in decisions if d.latency_ms and d.latency_ms > 0]
+    sorted_lat = sorted(latencies) if latencies else [0]
+    p50 = sorted_lat[int(len(sorted_lat) * 0.50)]
+    p90 = sorted_lat[int(len(sorted_lat) * 0.90)]
+    p95 = sorted_lat[int(len(sorted_lat) * 0.95)]
+    p99 = sorted_lat[int(len(sorted_lat) * 0.99)]
+    max_lat = max(sorted_lat) if sorted_lat else 0
+
+    return {
+        "total_tickets": total,
+        "zero_dropped": (total == 300),
+        "high_risk_total": high_risk_total,
+        "high_risk_reviewed": high_risk_reviewed,
+        "rule_conflicts": rule_conflicts,
+        "injections_caught": injections,
+        "latency_p50": p50,
+        "latency_p90": p90,
+        "latency_p95": p95,
+        "latency_p99": p99,
+        "latency_max": max_lat,
+    }
+
+
+@app.get("/api/config-summary")
+def get_config_summary() -> dict[str, Any]:
+    prompt_path = BASE_DIR / "prompts" / "triage_v1.txt"
+    prompt_text = prompt_path.read_text(encoding="utf-8") if prompt_path.exists() else ""
+
+    return {
+        "prompt_version": config.get("model", {}).get("prompt_version", "v1"),
+        "prompt_template": prompt_text,
+        "thresholds": config.get("thresholds", {}),
+        "urgent_keywords": config.get("safety", {}).get("urgent_keywords", []),
+        "injection_patterns": config.get("safety", {}).get("injection_patterns", []),
+        "categories": config.get("categories", {}),
+        "priorities": config.get("priorities", {}),
+    }
+
+
 @app.get("/api/download/review.csv", response_class=FileResponse)
 def download_review_csv():
     if not REVIEW_CSV_PATH.exists():

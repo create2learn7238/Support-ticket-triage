@@ -60,3 +60,23 @@ def test_get_index_returns_html():
     assert response.status_code == 200
     assert "text/html" in response.headers.get("content-type", "")
     assert "Support Ticket Triage" in response.text
+
+
+def test_sla_metrics():
+    response = client.get("/api/sla-metrics")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["total_tickets"] == 300
+    assert data["zero_dropped"] is True
+    assert "latency_p50" in data
+    assert "high_risk_reviewed" in data
+
+
+def test_config_summary():
+    response = client.get("/api/config-summary")
+    assert response.status_code == 200
+    data = response.json()
+    assert "prompt_template" in data
+    assert "urgent_keywords" in data
+    assert "injection_patterns" in data
+
